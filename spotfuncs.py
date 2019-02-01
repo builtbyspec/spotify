@@ -25,7 +25,7 @@ def get_spotify_credentials(filename):
 
     client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
     sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-    sp.trace = True
+    sp.trace = False
 
     return sp
 
@@ -118,7 +118,6 @@ def get_spotify_playlist_data(username='spotify', playlist=None, credentials_fil
     if p is None:
         print('Could not find playlist')
         return
-
     results = sp.user_playlist(p['owner']['id'], p['id'], fields="tracks,next")['tracks']
     tracks = results['items']
     while results['next'] and len(tracks) < track_number_limit:
@@ -152,10 +151,9 @@ def get_spotify_playlist_data(username='spotify', playlist=None, credentials_fil
             features.extend(fs)
 
     fs = pd.DataFrame(features)
-
     dat = pd.concat([dat, fs], axis=1)
     dat['track_name'] = track_names
-
+    """
     # ignore live, remix and deluxe album versions
     mask = [(('live' not in s.lower()) and ('deluxe' not in s.lower())
              and ('remix' not in s.lower())) for s in dat.album.values]
@@ -164,7 +162,7 @@ def get_spotify_playlist_data(username='spotify', playlist=None, credentials_fil
               'remastered' not in s.lower()
              and 'version' not in s.lower()) for s in dat.track_name.values]
     dat = dat[mask2]
-
+    """
     dat.set_index('track_name', inplace=True)
     dat = dat[~dat.index.duplicated(keep='first')]
     dat = dat.T[~dat.T.index.duplicated(keep='first')].T
