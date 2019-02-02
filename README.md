@@ -1,6 +1,6 @@
 # Spotify w/ Spec
 
-Message Anish for Client ID/Secret
+Message Anish if you need Client ID/Secret & for any questions
 
 
 ## Questions:
