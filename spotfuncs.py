@@ -229,7 +229,7 @@ def get_songs(artist_id, credentials_file):
 
     API = 'https://api.genius.com'
     HEADERS = {'Authorization': 'Bearer ' + genius_token}
-    songs = []
+    songs = {}
     page = 1
     search_endpoint = API + '/artists/' + str(artist_id) + '/songs'
 
@@ -244,7 +244,7 @@ def get_songs(artist_id, credentials_file):
             if len(s_json_response['response']['songs']) == 0:
                 break
             for song in s_json_response['response']['songs']:
-                songs.append([song['title'], song['id'], song['url']])
+                songs[song['title']] = (song['id'], song['url'])
             page += 1
     return songs
 
