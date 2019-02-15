@@ -6,6 +6,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from bs4 import BeautifulSoup
 import requests
 import lxml
+from multiprocessing import Pool
 
 def get_spotify_credentials(filename):
     if filename is None:
@@ -249,25 +250,51 @@ def get_songs(artist_id, credentials_file):
     return songs
 
 def get_lyrics(url):
-    get_url = requests.get(url)
-    song_soup = BeautifulSoup(get_url.text, 'lxml')
-    divs = song_soup.find_all('div')
+    if type(url) is dict:
+        urls = [i[1] for i in list(url.values())]
+        p = Pool(20)
+        records = p.map(requests.get, urls)
+        p.terminate()
+        p.join()
+        lyrics = []
+        for record in records:                
+            song_soup = BeautifulSoup(record.text, 'lxml')
+            divs = song_soup.find_all('div')
 
-    lyrics = []
-    for d in divs:
-        try:
-            if d['class'][0] == 'lyrics':
-                strings = d.stripped_strings
-        except KeyError:
-            pass
+            lyric = []
+            for d in divs:
+                try:
+                    if d['class'][0] == 'lyrics':
+                        strings = d.stripped_strings
+                except KeyError:
+                    pass
 
-    for s in strings:
-        if s[0] != '[':
-            lyrics.append(s)
+            for s in strings:
+                if s[0] != '[':
+                    lyric.append(s)
+            ls = ' '.join(lyric)
+            lyrics.append(ls)
+        return lyrics
+    else:
+        get_url = requests.get(url)
+        song_soup = BeautifulSoup(get_url.text, 'lxml')
+        divs = song_soup.find_all('div')
 
-    ls = ' '.join(lyrics)
+        lyrics = []
+        for d in divs:
+            try:
+                if d['class'][0] == 'lyrics':
+                    strings = d.stripped_strings
+            except KeyError:
+                pass
 
-    return ls
+        for s in strings:
+            if s[0] != '[':
+                lyrics.append(s)
+
+        ls = ' '.join(lyrics)
+
+        return ls
 
 def get_playlist_urls(df, credentials_file):
     # get the urls for the lyrics of all the songs in a dataframe
