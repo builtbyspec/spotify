@@ -88,6 +88,20 @@ def get_spotify_data(artist_name, credentials_file):
 
     return dat
 
+def get_featured_playlist_data(credentials_file=None,
+                              locale = None, country = None, timestamp = None, limit = 50, offset = 0):
+    sp = get_spotify_credentials(credentials_file)
+    featured_play = sp.featured_playlists(locale = locale,country = country,
+                                          timestamp = timestamp,
+                                          limit = limit, offset= offset)
+    dat = pd.io.json.json_normalize(featured_play["playlists"]["items"])
+    dat["region"] = "US"
+    dat["date"] = timestamp
+    dat = dat.drop(["images","owner.display_name",
+        "owner.external_urls.spotify","owner.href","owner.id",
+        "owner.uri"],axis = 1)
+    return dat
+    
 def get_spotify_playlist_data(username='spotify', playlist=None, credentials_file=None):
 
     # set a limit to total number of tracks to analyse
