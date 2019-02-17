@@ -2,6 +2,8 @@
 
 Message Anish if you need Client ID/Secret & for any questions
 
+## Link for daily top 100 for various regions (Jan 01, 2017 - Feb 16, 2019):
+https://drive.google.com/file/d/1CFbxFymW1fSb7nhkTNK5lKq1gG9cPXvH/view?usp=sharing
 
 ## Questions:
 
