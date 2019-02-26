@@ -1,0 +1,107 @@
+---
+title: "daily_top"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(skimr)
+```
+
+```{r}
+daily_top = read_csv("/Volumes/SD_Card/daily_top_acoustic.csv",col_names = TRUE)
+```
+```{r}
+daily_top <- daily_top %>%
+               select(-X1)
+```
+
+```{r}
+top_20_us <- daily_top %>%
+  filter(Region == "us") %>%
+  count(Artist) %>%
+  arrange(desc(n)) %>%
+  top_n(20,n) %>%
+  pull(Artist)
+```
+
+```{r}
+daily_top %>%
+  filter(Artist %in% top_20_us) %>%
+  count(Artist,Region) %>%
+  replace_na(list(n = 0))  %>%
+  mutate(Region = case_when(
+    Region == "us" ~ "us",
+    TRUE ~ "non_us"
+        )) %>%
+  group_by(Artist,Region) %>%
+  summarize(times_on_chart = median(n)) %>%
+  spread(Region, times_on_chart) %>%
+  mutate(diff = non_us - us) %>%
+  arrange(desc(diff))
+
+```
+
+```{r}
+daily_top %>%
+  count(Artist) %>%
+  top_n(20,n) %>%
+  mutate(Artist = fct_reorder(Artist,n)) %>%
+  ggplot(aes(x=Artist,y=n)) + geom_col() + coord_flip() + ggtitle("Most apperances")
+```
+```{r}
+daily_top %>%
+  count(Artist,`Track Name`) %>%
+  count(Artist) %>%
+  arrange(desc(nn)) %>%
+  mutate(Artist = fct_reorder(Artist,nn)) %>%
+  top_n(20,nn) %>%
+  ggplot(aes(x=Artist,y=nn, fill=Artist)) + geom_col() + coord_flip() + 
+    ggtitle("Most Unique Songs on Daily Chart") + guides(fill=FALSE) + 
+    ylab("Number of Unique Songs")
+```
+
+```{r}
+daily_top %>%
+  filter(Artist %in% top_20_us) %>%
+  mutate(duration_sc = duration_ms/1000) %>%
+  group_by(Artist, `Track Name`) %>%
+  summarize(mean_duration = mean(duration_sc)) %>%
+  group_by(Artist) %>%
+  summarize(mean_duration = mean(mean_duration)) %>%
+  mutate(Artist = fct_reorder(Artist,mean_duration)) %>%
+  ggplot(aes(Artist,mean_duration,fill=Artist)) + geom_col() + coord_flip() + 
+    guides(fill=FALSE) + ylab("Mean Duration of Songs on Top 100 (Seconds)") + 
+    ggtitle("The Average Song Length of Top 20 US Artists")
+  
+```
+
+```{r}
+daily_top %>%
+  count(time_signature)
+```
+
+```{r}
+daily_top %>%
+  filter(Region == "us") %>%
+  group_by(Date) %>%
+  summarize(mean_streams = mean(Streams)) %>%
+  ggplot(aes(Date,mean_streams))+geom_line()
+```
+```{r}
+daily_top %>%
+  group_by(Region, `Track Name`, key) %>%
+  group_by(Region, key) %>%
+  tally() %>%
+  drop_na() %>%
+  group_by(Region) %>%
+  filter(n %in% range(n)) %>%
+  filter(Region %in% c('us','ca')) %>%
+  mutate(key = as.character(key)) %>%
+  ggplot(aes(key,n)) + geom_col(position = "dodge") + facet_wrap(~Region)
+
+
+```
+
