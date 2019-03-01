@@ -8,6 +8,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 library(skimr)
+library(lubridate)
+library(tseries)
+library(TTR)
+library(TSA)
 ```
 
 ```{r}
@@ -24,6 +28,13 @@ top_20_us <- daily_top %>%
   count(Artist) %>%
   arrange(desc(n)) %>%
   top_n(20,n) %>%
+  pull(Artist)
+
+top_50_us <- daily_top %>%
+  filter(Region == "us") %>%
+  count(Artist) %>%
+  arrange(desc(n)) %>%
+  top_n(50,n) %>%
   pull(Artist)
 ```
 
@@ -65,7 +76,7 @@ daily_top %>%
 
 ```{r}
 daily_top %>%
-  filter(Artist %in% top_20_us) %>%
+  filter(Artist %in% top_50_us) %>%
   mutate(duration_sc = duration_ms/1000) %>%
   group_by(Artist, `Track Name`) %>%
   summarize(mean_duration = mean(duration_sc)) %>%
@@ -84,11 +95,25 @@ daily_top %>%
 ```
 
 ```{r}
-daily_top %>%
+mean_streams <- daily_top %>%
   filter(Region == "us") %>%
+  #filter(Date > ymd("2019-1-1")) %>%
   group_by(Date) %>%
   summarize(mean_streams = mean(Streams)) %>%
-  ggplot(aes(Date,mean_streams))+geom_line()
+  pull(mean_streams)
+
+adf.test(mean_streams, alternative = "stationary")
+
+acf(mean_streams, lag.max=30) #
+
+pacf(mean_streams, lag.max=30) # exceeds line so there is seasonality
+
+SmoothedSines <- SMA(mean_streams, n=5) #specify averaging over 5 time points
+
+plot(SmoothedSines,type="l")
+
+periodogram(Diff2TwoSinesGoingUpExponentially)
+  #ggplot(aes(Date,mean_streams))+geom_line()
 ```
 ```{r}
 daily_top %>%
