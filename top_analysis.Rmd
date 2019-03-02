@@ -11,15 +11,88 @@ library(skimr)
 library(lubridate)
 library(tseries)
 library(TTR)
-library(TSA)
+library(corrplot)
+library(broom)
 ```
 
 ```{r}
 daily_top = read_csv("/Volumes/SD_Card/daily_top_acoustic.csv",col_names = TRUE)
 ```
+
 ```{r}
 daily_top <- daily_top %>%
-               select(-X1)
+               select(-X1) %>%
+               drop_na()
+```
+
+```{r}
+corrplot(as.matrix(daily_top %>%
+                    filter(Region == "us") %>%
+                    select_if(is.numeric) %>%
+                      cor()))
+```
+```{r}
+lil_peep <- data.frame("Event" = c("Death","Album","Falling Down"),"Date" = c(mdy("11-15-17"),mdy("11-9-18"),mdy("09-19-18")))
+```
+
+```{r}
+lil_peep_time <- daily_top %>%
+  mutate(Date = as.factor(Date)) %>%
+  filter(Artist == "Lil Peep", Region == "us") %>%
+  complete(Date) %>%
+  group_by(Date) %>%
+  summarize(stream = mean(Streams)) %>%
+  mutate(Date = ymd(Date))
+```
+```{r warning=FALSE}
+ggplot(data = lil_peep_time, aes(Date, stream)) + geom_line() + geom_path(na.rm = TRUE) + 
+    geom_vline(data = lil_peep, aes(xintercept = Date), alpha = 0.4) + 
+    geom_text(data = lil_peep, mapping = aes(label = Event, y = 0), angle = -10, hjust = 1)
+  
+```
+```{r}
+daily_top %>%
+  mutate(Date = as.factor(Date)) %>%
+  filter(Artist == "Linkin Park", Region == "us") %>%
+  complete(Date) %>%
+  group_by(Date) %>%
+  summarize(stream = mean(Streams)) %>%
+  mutate(Date = ymd(Date)) %>%
+  ggplot(aes(Date, stream)) + geom_line()
+```
+```{r}
+xxx_events <- data.frame("Event" = c("Death","SAD","Skins","17"),"Date" = c(mdy("06-18-18"),mdy("03-16-18"),mdy("12-7-18"),mdy("08-25-2017")))
+```
+
+```{r}
+xxx <- daily_top %>%
+  mutate(Date = as.factor(Date)) %>%
+  filter(Artist == "XXXTENTACION", Region == "us") %>%
+  complete(Date) %>%
+  group_by(Date) %>%
+  summarize(stream = mean(Streams)) %>%
+  mutate(Date = ymd(Date))
+
+```
+
+
+```{r warning=FALSE}
+ggplot(data = xxx, aes(Date, stream)) + geom_line() + geom_path(na.rm = TRUE) + 
+    geom_vline(data = xxx_events, aes(xintercept = Date), alpha = 0.4) + 
+    geom_text(data = xxx_events, mapping = aes(label = Event, y = 0), angle = -10, hjust = 1,alpha = 0.9)
+  
+```
+```{r}
+daily_top %>%
+  mutate(weekday = wday(Date,label = TRUE)) %>%
+  group_by(weekday) %>%
+  summarize(stream = mean(Streams)) %>%
+  arrange(desc(stream))
+```
+```{r}
+daily_top %>%
+  mutate(weekday = wday(Date,label = TRUE)) %>%
+  do(tidy(aov(Streams ~ weekday, data = .),type="III"))
 ```
 
 ```{r}
@@ -70,13 +143,13 @@ daily_top %>%
   mutate(Artist = fct_reorder(Artist,nn)) %>%
   top_n(20,nn) %>%
   ggplot(aes(x=Artist,y=nn, fill=Artist)) + geom_col() + coord_flip() + 
-    ggtitle("Most Unique Songs on Daily Chart") + guides(fill=FALSE) + 
-    ylab("Number of Unique Songs")
+    ggtitle("Number of Songs on Daily Chart") + guides(fill=FALSE) + 
+    ylab("Amount of Different Songs")
 ```
 
 ```{r}
 daily_top %>%
-  filter(Artist %in% top_50_us) %>%
+  filter(Artist %in% top_20_us) %>%
   mutate(duration_sc = duration_ms/1000) %>%
   group_by(Artist, `Track Name`) %>%
   summarize(mean_duration = mean(duration_sc)) %>%
@@ -112,7 +185,7 @@ SmoothedSines <- SMA(mean_streams, n=5) #specify averaging over 5 time points
 
 plot(SmoothedSines,type="l")
 
-periodogram(Diff2TwoSinesGoingUpExponentially)
+#periodogram(Diff2TwoSinesGoingUpExponentially)
   #ggplot(aes(Date,mean_streams))+geom_line()
 ```
 ```{r}
