@@ -19,18 +19,28 @@ library(broom)
 daily_top = read_csv("/Volumes/SD_Card/daily_top_acoustic.csv",col_names = TRUE)
 ```
 
+Dropping NA's and a useless index column 
+
 ```{r}
 daily_top <- daily_top %>%
                select(-X1) %>%
                drop_na()
 ```
 
+## Correlation matrix
+
+Correlation plot of all the numeric columns in the dataset. It makes sense that Streams and Positions have a strong negative correlation as the more streams an artist as on their song the more likely they will be higher on the charts.
+
 ```{r}
 corrplot(as.matrix(daily_top %>%
                     filter(Region == "us") %>%
                     select_if(is.numeric) %>%
-                      cor()))
+                      cor())) 
 ```
+# Post Death Spotify
+
+Lil Peep was a mostly underground artist before his death. However after his death many people started to listen to more of this music and he gained a lot of fame. Let's see if this is reflected on the spotify top charts.
+
 ```{r}
 lil_peep <- data.frame("Event" = c("Death","Album","Falling Down"),"Date" = c(mdy("11-15-17"),mdy("11-9-18"),mdy("09-19-18")))
 ```
@@ -41,25 +51,28 @@ lil_peep_time <- daily_top %>%
   filter(Artist == "Lil Peep", Region == "us") %>%
   complete(Date) %>%
   group_by(Date) %>%
-  summarize(stream = mean(Streams)) %>%
+  summarize(max_pos = max(Position), avg_streams = mean(Streams)) %>%
   mutate(Date = ymd(Date))
 ```
+
 ```{r warning=FALSE}
-ggplot(data = lil_peep_time, aes(Date, stream)) + geom_line() + geom_path(na.rm = TRUE) + 
+ggplot(data = lil_peep_time, aes(Date, max_pos)) + geom_line() + geom_path(na.rm = TRUE) + 
     geom_vline(data = lil_peep, aes(xintercept = Date), alpha = 0.4) + 
-    geom_text(data = lil_peep, mapping = aes(label = Event, y = 0), angle = -10, hjust = 1)
-  
+    geom_text(data = lil_peep, mapping = aes(label = Event, y = 0), angle = -5, hjust = 0,
+              vjust = 51, size = 2.5) + 
+    scale_y_reverse(breaks = round(seq(0,200, by = 20)),
+                    labels = c(1,20,40,60,80,100,120,140,160,180,200)) +
+    ylab("Max Position") + xlab(element_blank()) + 
+    ggtitle("Lil Peep's Position on Spotify Charts over time")
+
+ggplot(data = lil_peep_time, aes(Date, avg_streams)) + geom_line() + geom_path(na.rm = TRUE) + 
+    geom_vline(data = lil_peep, aes(xintercept = Date), alpha = 0.4) + 
+    geom_text(data = lil_peep, mapping = aes(label = Event, y = 0), angle = -5, hjust = 1,
+              size = 2.5) + 
+    ylab("Average Streams") + xlab(element_blank()) + 
+    ggtitle("Lil Peep's Streams on Spotify Charts over time")
 ```
-```{r}
-daily_top %>%
-  mutate(Date = as.factor(Date)) %>%
-  filter(Artist == "Linkin Park", Region == "us") %>%
-  complete(Date) %>%
-  group_by(Date) %>%
-  summarize(stream = mean(Streams)) %>%
-  mutate(Date = ymd(Date)) %>%
-  ggplot(aes(Date, stream)) + geom_line()
-```
+
 ```{r}
 xxx_events <- data.frame("Event" = c("Death","SAD","Skins","17"),"Date" = c(mdy("06-18-18"),mdy("03-16-18"),mdy("12-7-18"),mdy("08-25-2017")))
 ```
@@ -70,16 +83,28 @@ xxx <- daily_top %>%
   filter(Artist == "XXXTENTACION", Region == "us") %>%
   complete(Date) %>%
   group_by(Date) %>%
-  summarize(stream = mean(Streams)) %>%
+  summarize(max_pos = max(Position), avg_streams = mean(Streams)) %>%
   mutate(Date = ymd(Date))
 
 ```
 
 
 ```{r warning=FALSE}
-ggplot(data = xxx, aes(Date, stream)) + geom_line() + geom_path(na.rm = TRUE) + 
+ggplot(data = xxx, aes(Date, max_pos)) + geom_line() + geom_path(na.rm = TRUE) + 
     geom_vline(data = xxx_events, aes(xintercept = Date), alpha = 0.4) + 
-    geom_text(data = xxx_events, mapping = aes(label = Event, y = 0), angle = -10, hjust = 1,alpha = 0.9)
+    geom_text(data = xxx_events, mapping = aes(label = Event, y = 0), angle = -5, hjust = 0,
+              vjust = 51, size = 2.5) + 
+    scale_y_reverse(breaks = round(seq(0,200, by = 20)),
+                    labels = c(1,20,40,60,80,100,120,140,160,180,200)) +
+    ylab("Max Position") + xlab(element_blank()) + 
+    ggtitle("XXXtentacion's Position on Spotify Charts over time")
+
+ggplot(data = xxx, aes(Date, avg_streams)) + geom_line() + geom_path(na.rm = TRUE) + 
+    geom_vline(data = xxx_events, aes(xintercept = Date), alpha = 0.4) + 
+    geom_text(data = xxx_events, mapping = aes(label = Event, y = 0), angle = -5, hjust = 1,
+              size = 2.5) + 
+    ylab("Average Streams") + xlab(element_blank()) + 
+    ggtitle("XXXtentacion's Streams on Spotify Charts over time")
   
 ```
 ```{r}
@@ -92,7 +117,7 @@ daily_top %>%
 ```{r}
 daily_top %>%
   mutate(weekday = wday(Date,label = TRUE)) %>%
-  do(tidy(aov(Streams ~ weekday, data = .),type="III"))
+  do(tidy(aov(Streams ~ weekday, data = .),type ="III"))
 ```
 
 ```{r}
