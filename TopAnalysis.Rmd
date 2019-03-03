@@ -1,0 +1,83 @@
+---
+title: "daily_top"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(skimr)
+library(lubridate)
+library(tseries)
+library(TTR)
+library(corrplot)
+library(broom)
+library(lubridate)
+```
+
+```{r}
+daily_top = read_csv("daily_top_acoustic.csv",col_names = TRUE)
+```
+
+```{r}
+daily_top <- daily_top %>%
+               select(-X1) %>%
+               drop_na()
+```
+
+
+```{r}
+mac_miller_events <- data.frame("Event" = c("Break Up", "Swimming", "Death"),"Date" = c(mdy("5-10-18"),mdy("8-3-18"),mdy("9-7-18")))
+```
+```{r}
+mac_miller <- daily_top %>%
+  mutate(Date = as.factor(Date)) %>%
+  mutate(Date = ymd(Date)) %>%
+  filter(Artist == "Mac Miller", Region == "us", year(Date) == "2018") %>%
+  complete(Date) %>%
+  group_by(Date) %>%
+  summarize(stream = mean(Streams)) %>%
+  mutate(Date = ymd(Date))
+```
+```{r warning=FALSE}
+ggplot(data = mac_miller, aes(Date,stream)) + geom_line() + geom_path(na.rm = TRUE) + 
+    geom_vline(data = mac_miller_events, aes(xintercept = Date), alpha = 0.4) + 
+    geom_text(data = mac_miller_events, mapping = aes(label = Event, y = 0), angle = -10, hjust = 1,alpha = 0.9)
+  
+```
+
+```{r}
+winter <- interval(mdy("1-1-18"), mdy("3-19-18")) 
+spring <- interval(mdy("3-20-18"), mdy("6-20-18"))
+summer <- interval(mdy("6-21-18"), mdy("9-20-18"))
+fall <- interval(mdy("9-21-18"), mdy("12-20-18"))
+
+seasons <- daily_top %>%
+  mutate(Date = ymd(Date)) %>% 
+  filter(year(Date) == '2018') %>% 
+  mutate(
+    season = case_when(
+      ymd(Date) %within% spring ~ "Spring",
+      ymd(Date) %within% summer ~ "Summer",
+      ymd(Date) %within% fall ~ "Fall",
+      TRUE ~ "Winter"
+      )) 
+```
+
+```{r}
+
+ggplot(seasons, aes(key, group = season)) + 
+          geom_bar(aes(y = ..prop.., fill = factor(..x..)), stat="count") + 
+          scale_y_continuous(labels=scales::percent) +
+          ylab("relative frequencies") +
+          facet_grid(~season)
+```
+```{r}
+seasons %>%
+  group_by(season) %>%
+  summarize(mean_danceability = mean(danceability)) %>%
+  ggplot(aes(x = season, y = mean_danceability, col = )) +
+          geom_col()
+
+```
